@@ -7,6 +7,7 @@ tonns_ratio_latex = r"""
 \text{Tonn Index} = \frac{\text{Summe der unteren Inzisivenbreiten (SIUK)}}{\text{Summe der oberen Inzisivenbreiten (SIOK)}} \times 100
 """
 
+
 # Translating the given Moyers probability table into a Python dictionary
 # The dictionary will have keys that are the measurements of the SIUK (Summe der Inzisivi im Unterkiefer)
 # and the values will be nested dictionaries with keys as percentages and values as the required space.
@@ -41,7 +42,26 @@ moyers_table_upper_jaw_complete = {
     25.0: {95: 24.6, 85: 24, 75: 23.7, 65: 23.4, 50: 23, 35: 22.7, 25: 22.4, 15: 22.1, 5: 21.5},
 }
 
+OK_nach_UK_dict = {
+    'OK12': [85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110],
+    'UK12': [77.6, 78.5, 79.4, 80.3, 81.3, 82.2, 83.1, 84.0, 84.9, 85.8, 86.7, 87.6, 88.6, 89.5, 90.4, 91.3, 92.2, 93.1, 94.0, 95.0, 95.9, 96.8, 97.7, 98.6, 99.5, 100.4]
+    }
 
+UK_nach_OK_dict = {
+    'UK12': [77.6, 78.5, 79.4, 80.3, 81.3, 82.2, 83.1, 84.0, 84.9, 85.8, 86.7, 87.6, 88.6, 89.5, 90.4, 91.3, 92.2, 93.1, 94.0, 95.0, 95.9, 96.8, 97.7, 98.6, 99.5, 100.4],
+    'OK12': [85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+    }
+
+# Function to find the corresponding value
+def find_corresponding_value(lower_sum_6_6, uk_to_ok_dict):
+    # First, round lower_sum_6_6 to the closest value in the UK12 list
+    closest_value = min(uk_to_ok_dict['UK12'], key=lambda x: abs(x - lower_sum_6_6))
+    
+    # Find the index of this value
+    index = uk_to_ok_dict['UK12'].index(closest_value)
+    
+    # Return the corresponding OK12 value
+    return uk_to_ok_dict['OK12'][index]
 
 
 def calculate_tonns_relation(sum_upper_anterior, sum_lower_anterior):
@@ -55,7 +75,10 @@ def calculate_tonns_relation(sum_upper_anterior, sum_lower_anterior):
     
 
     # Tonnsche Relation berechnen
-    tonns_ratio = round(((sum_lower_anterior / sum_upper_anterior) * 100),1)
+    try:
+        tonns_ratio = round(((sum_lower_anterior / sum_upper_anterior) * 100),1)
+    except ZeroDivisionError:
+        tonns_ratio = 0
 
     # Überschuss bestimmen
     if tonns_ratio > 74:
@@ -69,6 +92,11 @@ def calculate_tonns_relation(sum_upper_anterior, sum_lower_anterior):
 
     return result, tonns_ratio, surplus
 
+def round_up_to_nearest_half(number):
+    result = int(number*2+1)/2
+    return result
+
+
 def Frontzahnbreiten(zahnbreiten, anzahl_frontzähne):
     upper_anterior_teeth = [zahnbreiten.get(f"1.{i}", 0) for i in range(1, anzahl_frontzähne+1)] + \
                         [zahnbreiten.get(f"2.{i}", 0) for i in range(1, anzahl_frontzähne+1)]
@@ -77,17 +105,19 @@ def Frontzahnbreiten(zahnbreiten, anzahl_frontzähne):
                         [zahnbreiten.get(f"4.{i}", 0) for i in range(1, anzahl_frontzähne+1)]
     lower_anterior_sum = sum(lower_anterior_teeth)
 
+
     return upper_anterior_sum, lower_anterior_sum
 
 #Interface
 
-st.title("Modellanalyse")
-st.subheader("Auswertung von KFO Modellen")
+st.title("Modellanalyse - Auswertung von KFO Modellen")
+st.subheader("Dateneingabe")
 # Input for the vorderen Zähne
 
 with st.expander("Eingabefelder zeigen"):
     
     st.subheader("Eingabe der Zahnbreiten")
+    st.write("**Quadranten aus Sicht des Behandlers**")
     zahnbreiten = {}
 
     # Quadranten definieren
@@ -108,7 +138,7 @@ with st.expander("Eingabefelder zeigen"):
                 zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, format="%.2f")
         # Nächste vier Zähne in der zweiten Reihe
         cols = st.columns(4)
-        for i in range(4, 8):
+        for i in range(4, 6):
             with cols[i - 4]:
                 zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, format="%.2f")
 
@@ -117,9 +147,57 @@ with st.expander("Eingabefelder zeigen"):
         st.write("Daten erfolgreich gesendet.")
     
 
-upper_anterior_sum, lower_anterior_sum = Frontzahnbreiten(zahnbreiten, 2)
+with st.expander('Zahnübersicht (Eingabe) anzeigen'):
+    # Werte für alle Zähne im Ober- und Unterkiefer extrahieren
+    upper_teeth = [zahnbreiten.get(f"{i}.{j}", 0) for i in range(1, 3) for j in range(1, 7)]
+    upper_sum = sum(upper_teeth)
+    lower_teeth = [zahnbreiten.get(f"{i}.{j}", 0) for i in range(3, 5) for j in range(1, 7)]
+    lower_sum = sum(lower_teeth)
+
+
+
+    # Neuordnung der Zahnbreiten für den Oberkiefer
+    oberkiefer_reihenfolge_links = [f"2.{i}" for i in range(6, 0, -1)]
+    oberkiefer_reihenfolge_rechts = [f"1.{i}" for i in range(1, 7)]
+
+    # Neuordnung der Zahnbreiten für den Unterkiefer
+    unterkiefer_reihenfolge_rechts = [f"3.{i}" for i in range(1, 7)]
+    unterkiefer_reihenfolge_links = [f"4.{i}" for i in range(6, 0, -1)]
+
+    # Erstellen eines DataFrames für den Oberkiefer
+    oberkiefer_breiten_links = {tooth: zahnbreiten[tooth] for tooth in oberkiefer_reihenfolge_links}
+    oberkiefer_breiten_rechts = {tooth: zahnbreiten[tooth] for tooth in oberkiefer_reihenfolge_rechts}
+
+    df_oberkiefer_links = pd.DataFrame([oberkiefer_breiten_links], index=["Breite"]).round(1)
+    df_oberkiefer_rechts = pd.DataFrame([oberkiefer_breiten_rechts], index=["Breite"]).round(1)
+
+    # Erstellen eines DataFrames für den Unterkiefer
+    unterkiefer_breiten_links = {tooth: zahnbreiten[tooth] for tooth in unterkiefer_reihenfolge_links}
+    unterkiefer_breiten_rechts = {tooth: zahnbreiten[tooth] for tooth in unterkiefer_reihenfolge_rechts}
+
+    df_unterkiefer_links = pd.DataFrame([unterkiefer_breiten_links], index=["Breite"]).round(1)
+    df_unterkiefer_rechts = pd.DataFrame([unterkiefer_breiten_rechts], index=["Breite"]).round(1)
+
+    # Anzeigen der DataFrames in Streamlit
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.dataframe(df_oberkiefer_links, hide_index=True)
+        st.dataframe(df_unterkiefer_links, hide_index=True)
+
+    with col2:
+        st.dataframe(df_oberkiefer_rechts, hide_index=True)
+        st.dataframe(df_unterkiefer_rechts, hide_index=True)
+
+    st.write(f"Breiten der Zähne im Oberkiefer in Summe: {upper_sum} mm.")
+    st.write(f"Breiten der Zähne im Unterkiefer in Summe {lower_sum} mm.")
+
+upper_anterior_sum, lower_anterior_sum_orig = Frontzahnbreiten(zahnbreiten, 2)
+#st.write(lower_anterior_sum)
+lower_anterior_sum = round_up_to_nearest_half(lower_anterior_sum_orig)
+#st.write(lower_anterior_sum)
 st.write(f"Summe Schneidezahnbreite Oberkiefer (SIOK): {upper_anterior_sum} mm.")
-st.write(f"Summe Schneidezahnbreiten Unterkiefer (SIUK): {lower_anterior_sum} mm.")
+st.write(f"Summe Schneidezahnbreiten Unterkiefer (SIUK): {lower_anterior_sum_orig} mm. => gerundet auf **{lower_anterior_sum}** mm.")
 
 st.subheader("Stützzonenanalyse nach Moyers (75%-Grenze)")
 #st.write("Es wird die Moyers-Tabelle verwendet. Hier wird die Summe der mesiodistalen Breiten der unteren Inzisivi (SIUK) übergeben . Dieser Wert ist ein Maß für die Breite der vorderen Zähne im Kiefer und dient als Schlüssel, um den Platzbedarf für die bleibenden Zähne (Eckzahn, 1. Prämolar und 2. Prämolar) sowohl im Ober- als auch im Unterkiefer zu ermitteln.")
@@ -152,8 +230,6 @@ try:
     col4.write(f'rechts: {diff_UK_rechts}')
     col4.write(f'links: {diff_UK_links}')
 
-
-
    
 
 except KeyError:
@@ -162,50 +238,6 @@ except KeyError:
 
 
 
-with st.expander('Alle Zähne'):
-    # Werte für alle Zähne im Ober- und Unterkiefer extrahieren
-    upper_teeth = [zahnbreiten.get(f"{i}.{j}", 0) for i in range(1, 3) for j in range(1, 9)]
-    upper_sum = sum(upper_teeth)
-    lower_teeth = [zahnbreiten.get(f"{i}.{j}", 0) for i in range(3, 5) for j in range(1, 9)]
-    lower_sum = sum(lower_teeth)
-
-
-
-    # Neuordnung der Zahnbreiten für den Oberkiefer
-    oberkiefer_reihenfolge_links = [f"2.{i}" for i in range(8, 0, -1)]
-    oberkiefer_reihenfolge_rechts = [f"1.{i}" for i in range(1, 9)]
-
-    # Neuordnung der Zahnbreiten für den Unterkiefer
-    unterkiefer_reihenfolge_rechts = [f"3.{i}" for i in range(1, 9)]
-    unterkiefer_reihenfolge_links = [f"4.{i}" for i in range(8, 0, -1)]
-
-    # Erstellen eines DataFrames für den Oberkiefer
-    oberkiefer_breiten_links = {tooth: zahnbreiten[tooth] for tooth in oberkiefer_reihenfolge_links}
-    oberkiefer_breiten_rechts = {tooth: zahnbreiten[tooth] for tooth in oberkiefer_reihenfolge_rechts}
-
-    df_oberkiefer_links = pd.DataFrame([oberkiefer_breiten_links], index=["Breite"]).round(1)
-    df_oberkiefer_rechts = pd.DataFrame([oberkiefer_breiten_rechts], index=["Breite"]).round(1)
-
-    # Erstellen eines DataFrames für den Unterkiefer
-    unterkiefer_breiten_links = {tooth: zahnbreiten[tooth] for tooth in unterkiefer_reihenfolge_links}
-    unterkiefer_breiten_rechts = {tooth: zahnbreiten[tooth] for tooth in unterkiefer_reihenfolge_rechts}
-
-    df_unterkiefer_links = pd.DataFrame([unterkiefer_breiten_links], index=["Breite"]).round(1)
-    df_unterkiefer_rechts = pd.DataFrame([unterkiefer_breiten_rechts], index=["Breite"]).round(1)
-
-    # Anzeigen der DataFrames in Streamlit
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.dataframe(df_oberkiefer_links)
-        st.dataframe(df_unterkiefer_links)
-
-    with col2:
-        st.dataframe(df_oberkiefer_rechts)
-        st.dataframe(df_unterkiefer_rechts)
-
-    st.write(f"Breiten der Zähne im Oberkiefer in Summe: {upper_sum} mm.")
-    st.write(f"Breiten der Zähne im Unterkiefer in Summe {lower_sum} mm.")
 
 tonns_result, tonns_ratio, surplus = calculate_tonns_relation(upper_anterior_sum, lower_anterior_sum)
 st.subheader('Tonn Index - Resultate')
@@ -225,10 +257,6 @@ col6.write(f'**{surplus}**')
 
 
 
-ttsr = round(((lower_sum/ upper_sum) * 100),2)
-upper_anterior_sum, lower_anterior_sum = Frontzahnbreiten(zahnbreiten, 3)
-atsr = round(((lower_anterior_sum / upper_anterior_sum) * 100),2)
-
 
 
 st.subheader('Breitenrelation nach Bolton ')
@@ -247,22 +275,54 @@ upper_sum_6_6 = sum(upper_teeth_6_6)
 lower_teeth_6_6 = [zahnbreiten.get(f"{i}.{j}", 0) for i in range(3, 5) for j in range(1, 7)]
 lower_sum_6_6 = sum(lower_teeth_6_6)
 
+try:
+    ttsr = round(((lower_sum/ upper_sum) * 100),2)
+    upper_anterior_sum, lower_anterior_sum = Frontzahnbreiten(zahnbreiten, 3)
+    atsr = round(((lower_anterior_sum / upper_anterior_sum) * 100),2)
+    ratio = round(((upper_sum_6_6/lower_sum_6_6)*100),2)
+except ZeroDivisionError:
+    ttsr = 0
+    atsr = 0
+    ratio = 0
+
+# Auswertungen
+if ttsr <91.3:
+    text_ttsr = "OK-Zahnmaterial relativ zu groß"
+    corresponding_value = find_corresponding_value(lower_sum_6_6, UK_nach_OK_dict)
+    text_korrektur = f"Im OK muss auf {corresponding_value} mm reduziert werden."
+
+elif ttsr >91.3:
+    text_ttsr = "UK-Zahnmaterial relativ zu groß"
+    corresponding_value = find_corresponding_value(upper_sum_6_6, OK_nach_UK_dict)
+    text_korrektur = f"Im UK muss auf {corresponding_value} mm reduziert werden."
+
+if atsr <77.2:
+    text_atsr = "OK-Zahnmaterial relativ zu groß"
+elif atsr >77.2:
+    text_atsr = "UK-Zahnmaterial relativ zu groß"
 
 
+# Anzeige   
 col1, col2 = st.columns(2)
 col1.write(f'Overall Ratio:   ')
-col2.write(f"**{ttsr}** %")
+col2.write(f"**{ttsr}** % ({text_ttsr})")
+st.write('--- NOCH ZU TESTEN ---')
+st.markdown(f''':red[**{text_korrektur}**]''')
+st.write("---")
 col1.write(f'Summe 6-6 OK:')
 col2.write(f'**{upper_sum_6_6}** mm.')
-col1.write(f'Summe 6-6 OK:')
-col2.write(f'**{upper_sum_6_6}** mm.')
+col1.write(f'Summe 6-6 UK:')
+col2.write(f'**{lower_sum_6_6}** mm.')
+#col2.write(f'ratio = {ratio} %')
+
+col1.write()
 
 
 st.markdown('''**Summe der Breiten 
            aller permanenten Frontzähne (3-3) im Unterkiefer geteilt durch Summe aller permanenten Frontzähne (3-3) im Oberkiefer.**''')
 col3, col4 = st.columns(2)
 col3.write(f'Anterior Ratio: ')
-col4.write(f'**{atsr}** %')
+col4.write(f'**{atsr}** % ({text_atsr})')
 col3.write(f'Summe 3-3 OK:')
 col4.write(f'**{upper_sum_3_3}** mm.')
 col3.write(f'Summe 3-3 UK:')
