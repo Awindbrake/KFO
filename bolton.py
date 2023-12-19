@@ -53,7 +53,7 @@ UK_nach_OK_dict = {
     }
 
 # Function to find the corresponding value
-def find_corresponding_value(lower_sum_6_6, uk_to_ok_dict):
+def find_corresponding_value_OK(lower_sum_6_6, uk_to_ok_dict):
     # First, round lower_sum_6_6 to the closest value in the UK12 list
     closest_value = min(uk_to_ok_dict['UK12'], key=lambda x: abs(x - lower_sum_6_6))
     
@@ -62,6 +62,17 @@ def find_corresponding_value(lower_sum_6_6, uk_to_ok_dict):
     
     # Return the corresponding OK12 value
     return uk_to_ok_dict['OK12'][index]
+
+# Function to find the corresponding value
+def find_corresponding_value_UK(upper_sum_6_6, ok_to_uk_dict):
+    # First, round lower_sum_6_6 to the closest value in the UK12 list
+    closest_value = min(ok_to_uk_dict['OK12'], key=lambda x: abs(x - upper_sum_6_6))
+    
+    # Find the index of this value
+    index = ok_to_uk_dict['OK12'].index(closest_value)
+    
+    # Return the corresponding OK12 value
+    return ok_to_uk_dict['UK12'][index]
 
 
 def calculate_tonns_relation(sum_upper_anterior, sum_lower_anterior):
@@ -74,7 +85,7 @@ def calculate_tonns_relation(sum_upper_anterior, sum_lower_anterior):
     """
     
 
-    # Tonnsche Relation berechnen
+    # Tonnschen Index berechnen
     try:
         tonns_ratio = round(((sum_lower_anterior / sum_upper_anterior) * 100),1)
     except ZeroDivisionError:
@@ -91,6 +102,18 @@ def calculate_tonns_relation(sum_upper_anterior, sum_lower_anterior):
     result = f"Tonn Index: {tonns_ratio},\n{surplus}"
 
     return result, tonns_ratio, surplus
+
+def check_decimal(value):
+    # Extract the decimal part of the number
+    decimal_part = value % 1
+    
+    # Check if the decimal part is 0.5 or 0
+    if decimal_part == 0.5 or decimal_part == 0:
+        # If condition is met, do something
+        return True
+    else:
+        # If condition is not met, do nothing
+        return False
 
 def round_up_to_nearest_half(number):
     result = int(number*2+1)/2
@@ -142,9 +165,6 @@ with st.expander("Eingabefelder zeigen"):
             with cols[i - 4]:
                 zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, format="%.2f")
 
-    # Button zum Senden der Daten
-    if st.button('Daten absenden'):
-        st.write("Daten erfolgreich gesendet.")
     
 
 with st.expander('Zahnübersicht (Eingabe) anzeigen'):
@@ -153,7 +173,6 @@ with st.expander('Zahnübersicht (Eingabe) anzeigen'):
     upper_sum = sum(upper_teeth)
     lower_teeth = [zahnbreiten.get(f"{i}.{j}", 0) for i in range(3, 5) for j in range(1, 7)]
     lower_sum = sum(lower_teeth)
-
 
 
     # Neuordnung der Zahnbreiten für den Oberkiefer
@@ -193,14 +212,17 @@ with st.expander('Zahnübersicht (Eingabe) anzeigen'):
     st.write(f"Breiten der Zähne im Unterkiefer in Summe {lower_sum} mm.")
 
 upper_anterior_sum, lower_anterior_sum_orig = Frontzahnbreiten(zahnbreiten, 2)
-#st.write(lower_anterior_sum)
-lower_anterior_sum = round_up_to_nearest_half(lower_anterior_sum_orig)
-#st.write(lower_anterior_sum)
+
+if not check_decimal(lower_anterior_sum_orig):
+    lower_anterior_sum = round_up_to_nearest_half(lower_anterior_sum_orig)
+else:
+    lower_anterior_sum = lower_anterior_sum_orig
+
 st.write(f"Summe Schneidezahnbreite Oberkiefer (SIOK): {upper_anterior_sum} mm.")
 st.write(f"Summe Schneidezahnbreiten Unterkiefer (SIUK): {lower_anterior_sum_orig} mm. => gerundet auf **{lower_anterior_sum}** mm.")
 
 st.subheader("Stützzonenanalyse nach Moyers (75%-Grenze)")
-#st.write("Es wird die Moyers-Tabelle verwendet. Hier wird die Summe der mesiodistalen Breiten der unteren Inzisivi (SIUK) übergeben . Dieser Wert ist ein Maß für die Breite der vorderen Zähne im Kiefer und dient als Schlüssel, um den Platzbedarf für die bleibenden Zähne (Eckzahn, 1. Prämolar und 2. Prämolar) sowohl im Ober- als auch im Unterkiefer zu ermitteln.")
+
 col1, col2 = st.columns(2)
 try:
     required_space_lower_jaw = moyers_table_lower_jaw_complete[lower_anterior_sum][75]
@@ -237,8 +259,6 @@ except KeyError:
 
 
 
-
-
 tonns_result, tonns_ratio, surplus = calculate_tonns_relation(upper_anterior_sum, lower_anterior_sum)
 st.subheader('Tonn Index - Resultate')
 st.write("---")
@@ -257,8 +277,6 @@ col6.write(f'**{surplus}**')
 
 
 
-
-
 st.subheader('Breitenrelation nach Bolton ')
 #st.write('**Overall Ratio):**')
 st.markdown('''**Summe der Breiten 
@@ -267,13 +285,13 @@ st.markdown('''**Summe der Breiten
 
 # Berechnung der Teilreihen
 upper_teeth_3_3 = [zahnbreiten.get(f"{i}.{j}", 0) for i in range(1, 3) for j in range(1, 4)]
-upper_sum_3_3 = sum(upper_teeth_3_3)
+upper_sum_3_3 = round(sum(upper_teeth_3_3),1)
 lower_teeth_3_3 = [zahnbreiten.get(f"{i}.{j}", 0) for i in range(3, 5) for j in range(1, 4)]
-lower_sum_3_3 = sum(lower_teeth_3_3)
+lower_sum_3_3 = round(sum(lower_teeth_3_3),1)
 upper_teeth_6_6 = [zahnbreiten.get(f"{i}.{j}", 0) for i in range(1, 3) for j in range(1, 7)]
-upper_sum_6_6 = sum(upper_teeth_6_6)
+upper_sum_6_6 = round(sum(upper_teeth_6_6),1)
 lower_teeth_6_6 = [zahnbreiten.get(f"{i}.{j}", 0) for i in range(3, 5) for j in range(1, 7)]
-lower_sum_6_6 = sum(lower_teeth_6_6)
+lower_sum_6_6 = round(sum(lower_teeth_6_6),1)
 
 try:
     ttsr = round(((lower_sum/ upper_sum) * 100),2)
@@ -288,18 +306,21 @@ except ZeroDivisionError:
 # Auswertungen
 if ttsr <91.3:
     text_ttsr = "OK-Zahnmaterial relativ zu groß"
-    corresponding_value = find_corresponding_value(lower_sum_6_6, UK_nach_OK_dict)
+    corresponding_value = find_corresponding_value_OK(lower_sum_6_6, UK_nach_OK_dict)
     text_korrektur = f"Im OK muss auf {corresponding_value} mm reduziert werden."
 
 elif ttsr >91.3:
     text_ttsr = "UK-Zahnmaterial relativ zu groß"
-    corresponding_value = find_corresponding_value(upper_sum_6_6, OK_nach_UK_dict)
+    corresponding_value = find_corresponding_value_UK(upper_sum_6_6, OK_nach_UK_dict)
     text_korrektur = f"Im UK muss auf {corresponding_value} mm reduziert werden."
 
 if atsr <77.2:
     text_atsr = "OK-Zahnmaterial relativ zu groß"
 elif atsr >77.2:
     text_atsr = "UK-Zahnmaterial relativ zu groß"
+
+
+
 
 
 # Anzeige   
@@ -328,6 +349,7 @@ col4.write(f'**{upper_sum_3_3}** mm.')
 col3.write(f'Summe 3-3 UK:')
 col4.write(f'**{lower_sum_3_3}** mm.')
 
+        
         
 
 
