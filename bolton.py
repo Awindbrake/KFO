@@ -1,12 +1,18 @@
 import streamlit as st
 import pandas as pd
+import base64
+import requests
+import pandas as pd
+import io
+from io import StringIO
 
 
 # LaTeX-Code für die Tonnsche Relation
 tonns_ratio_latex = r"""
 \text{Tonn Index} = \frac{\text{Summe der unteren Inzisivenbreiten (SIUK)}}{\text{Summe der oberen Inzisivenbreiten (SIOK)}} \times 100
 """
-
+TOKEN = "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"
+csv_url = 'https://raw.githubusercontent.com/Awindbrake/KFO/main/data.csv'
 
 # Translating the given Moyers probability table into a Python dictionary
 # The dictionary will have keys that are the measurements of the SIUK (Summe der Inzisivi im Unterkiefer)
@@ -74,7 +80,7 @@ def find_corresponding_value_UK(upper_sum_6_6, ok_to_uk_dict):
     # Return the corresponding OK12 value
     return ok_to_uk_dict['UK12'][index]
 
-
+# Function to calculate Tonns Relation
 def calculate_tonns_relation(sum_upper_anterior, sum_lower_anterior):
     """
     Berechnet die Tonnsche Relation basierend auf den Schneidezahnbreiten.
@@ -103,6 +109,7 @@ def calculate_tonns_relation(sum_upper_anterior, sum_lower_anterior):
 
     return result, tonns_ratio, surplus
 
+# Helper function to check decimal - if they end in .5 or .0 no rounding
 def check_decimal(value):
     # Extract the decimal part of the number
     decimal_part = value % 1
@@ -115,11 +122,12 @@ def check_decimal(value):
         # If condition is not met, do nothing
         return False
 
+# round to next half number
 def round_up_to_nearest_half(number):
     result = int(number*2+1)/2
     return result
 
-
+# calculate anterior teeth width
 def Frontzahnbreiten(zahnbreiten, anzahl_frontzähne):
     upper_anterior_teeth = [zahnbreiten.get(f"1.{i}", 0) for i in range(1, anzahl_frontzähne+1)] + \
                         [zahnbreiten.get(f"2.{i}", 0) for i in range(1, anzahl_frontzähne+1)]
@@ -131,11 +139,94 @@ def Frontzahnbreiten(zahnbreiten, anzahl_frontzähne):
 
     return upper_anterior_sum, lower_anterior_sum
 
-#Interface
+# routine to save data
+def update_csv_github(data_to_append, token):
+    
+    # GitHub API URL for the file
+    api_url = "https://api.github.com/repos/Awindbrake/KFO/contents/data.csv"
+
+    headers = {
+        'Authorization': f'token {token}',
+        'Accept': 'application/vnd.github.v3+json',
+    }
+
+    # Step 1: Check if the file exists and get its content
+    response = requests.get(api_url, headers=headers)
+    if response.status_code == 200:
+        # File exists, read its content
+        content = base64.b64decode(response.json()['content']).decode('utf-8')
+        sha = response.json()['sha']
+        existing_df = pd.read_csv(io.StringIO(content))
+        # Append new data to existing DataFrame
+        updated_df = pd.concat([existing_df, data_to_append])
+    else:
+        # File does not exist, use new data as the content
+        updated_df = data_to_append
+        sha = None
+
+    # Convert updated DataFrame to CSV format
+    output = io.StringIO()
+    updated_df.to_csv(output, index=False)
+    output.seek(0)
+    csv_content_encoded = base64.b64encode(output.getvalue().encode('utf-8')).decode('utf-8')
+
+    # Step 2: Create or update the file on GitHub
+    commit_message = 'Update the file with new data' if sha else 'Create the file with initial data'
+    payload = {
+        'message': commit_message,
+        'content': csv_content_encoded,
+        'sha': sha,
+    }
+    put_response = requests.put(api_url, headers=headers, json=payload)
+    put_response.raise_for_status()  # Handle errors for PUT request
+
+    # Cleanup
+    output.close()
+
+# routine to load data
+def load_data_from_github(url):
+    # Send a GET request to the GitHub raw content URL of your CSV file
+    response = requests.get(url)
+    response.raise_for_status()  # Ensure the request was successful
+
+    # Read the content of the file into a pandas DataFrame
+    csv_data = StringIO(response.text)
+    df = pd.read_csv(csv_data)
+    return df
+
+
+#----------- build streamlit Interface-----------------------------
 
 st.title("Modellanalyse - Auswertung von KFO Modellen")
 st.subheader("Dateneingabe")
-# Input for the vorderen Zähne
+
+st.write('Sollen frühere Analysen geladen werden oder Anlage Neupatient?')
+mode = st.radio("Auswahl", ("neue Analyse", "lade existierende Analyse"), index=0)
+
+if mode == "lade existierende Analyse":
+    
+    # Load the data
+    data_df = load_data_from_github(csv_url)
+
+    # List of columns to drop (by index)
+    columns_to_drop = list(range(1, 21))  # This will drop columns with indices from 1 to 20
+
+    # Drop the columns
+    data_df = data_df.drop(data_df.columns[columns_to_drop], axis=1)
+
+    # Get unique values from the 'pat_id' column
+    pat_ids = data_df['pat_id'].unique()
+
+    # Create a select box for user to choose a pat_id
+    pat_id = st.selectbox('Select Patient ID', pat_ids)
+    selected_row = data_df[data_df['pat_id'] == pat_id].iloc[0] if not data_df[data_df['pat_id'] == pat_id].empty else None
+    
+else:
+    # Logic for entering new patient data
+    selected_row = None
+    pat_id = st.text_input("Patient-ID:")
+
+
 
 with st.expander("Eingabefelder zeigen"):
     
@@ -158,14 +249,15 @@ with st.expander("Eingabefelder zeigen"):
         cols = st.columns(4)
         for i in range(4):
             with cols[i]:
-                zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, format="%.2f")
+                default_value = selected_row[teeth[i]] if selected_row is not None else 0.0
+                zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, value=default_value, format="%.2f")
         # Nächste vier Zähne in der zweiten Reihe
         cols = st.columns(4)
         for i in range(4, 6):
             with cols[i - 4]:
-                zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, format="%.2f")
+                default_value = selected_row[teeth[i]] if selected_row is not None else 0.0
+                zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, value=default_value, format="%.2f")
 
-    
 
 with st.expander('Zahnübersicht (Eingabe) anzeigen'):
     # Werte für alle Zähne im Ober- und Unterkiefer extrahieren
@@ -225,8 +317,8 @@ st.subheader("Stützzonenanalyse nach Moyers (75%-Grenze)")
 
 col1, col2 = st.columns(2)
 try:
-    required_space_lower_jaw = moyers_table_lower_jaw_complete[lower_anterior_sum][75]
-    required_space_upper_jaw = moyers_table_upper_jaw_complete[lower_anterior_sum][75]
+    # required_space_lower_jaw = moyers_table_lower_jaw_complete[lower_anterior_sum][75]
+    # required_space_upper_jaw = moyers_table_upper_jaw_complete[lower_anterior_sum][75]
     
     required_space_upper_jaw = moyers_table_upper_jaw_complete[lower_anterior_sum][75]
     platzangebot_ok_rechts = col1.number_input(f"Platzangebot OK rechts", min_value=0.0, format="%.2f")
@@ -321,8 +413,6 @@ elif atsr >77.2:
 
 
 
-
-
 # Anzeige   
 col1, col2 = st.columns(2)
 col1.write(f'Overall Ratio:   ')
@@ -348,6 +438,54 @@ col3.write(f'Summe 3-3 OK:')
 col4.write(f'**{upper_sum_3_3}** mm.')
 col3.write(f'Summe 3-3 UK:')
 col4.write(f'**{lower_sum_3_3}** mm.')
+
+        
+
+st.write("---")
+if st.button("save to file"):
+
+    data = {
+    'pat_id':[pat_id],
+    'upper_anterior_sum': [upper_anterior_sum],
+    'lower_anterior_sum': [lower_anterior_sum],
+    'required_space_upper_jaw': [required_space_upper_jaw],
+    'required_space_lower_jaw': [required_space_lower_jaw],
+    'platzangebot_ok_rechts': [platzangebot_ok_rechts],
+    'platzangebot_ok_links': [platzangebot_ok_links],
+    'platzangebot_uk_rechts': [platzangebot_uk_rechts],
+    'platzangebot_uk_links': [platzangebot_uk_links],
+    'diff_OK_rechts': [diff_OK_rechts],
+    'diff_OK_links': [diff_OK_links],
+    'diff_UK_rechts': [diff_UK_rechts],
+    'diff_UK_links': [diff_UK_links],
+    'tonns_ratio': [tonns_ratio],
+    'surplus': [surplus],
+    'upper_sum_3_3': [upper_sum_3_3],
+    'lower_sum_3_3': [lower_sum_3_3],
+    'upper_sum_6_6': [upper_sum_6_6],
+    'lower_sum_6_6': [lower_sum_6_6],
+    'ttsr': [ttsr],
+    'atsr': [atsr]
+}   
+    df_values = pd.DataFrame(data)
+    df_oberkiefer_links_sv = df_oberkiefer_links.reset_index(drop=True)
+    df_oberkiefer_rechts_sv = df_oberkiefer_rechts.reset_index(drop=True)
+    df_unterkiefer_links_sv = df_unterkiefer_links.reset_index(drop=True)
+    df_unterkiefer_rechts_sv = df_unterkiefer_rechts.reset_index(drop=True)
+
+
+    final_df = pd.concat([
+        df_values,
+        df_oberkiefer_rechts_sv,
+        df_oberkiefer_links_sv,
+        df_unterkiefer_rechts_sv,
+        df_unterkiefer_links_sv
+    ], axis=1)
+
+    #st.dataframe(final_df)
+    csv_file_name = 'data.csv'
+    final_df.to_csv(csv_file_name, index=False) 
+    update_csv_github(final_df, TOKEN)
 
         
         
