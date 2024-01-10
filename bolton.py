@@ -11,7 +11,7 @@ from io import StringIO
 tonns_ratio_latex = r"""
 \text{Tonn Index} = \frac{\text{Summe der unteren Inzisivenbreiten (SIUK)}}{\text{Summe der oberen Inzisivenbreiten (SIOK)}} \times 100
 """
-TOKEN = st.secrets["TOKEN"]
+token = st.secrets["TOKEN"]
 csv_url = 'https://raw.githubusercontent.com/Awindbrake/KFO/main/data.csv'
 
 # Translating the given Moyers probability table into a Python dictionary
