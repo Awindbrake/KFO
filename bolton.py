@@ -203,7 +203,7 @@ def update_csv_github(data_to_append, token):
     api_url = "https://api.github.com/repos/Awindbrake/KFO/contents/data.csv"
 
     headers = {
-        'Authorization': f'token {token}',
+        'Authorization': {token}',   #f'token {token}',
         'Accept': 'application/vnd.github.v3+json',
     }
 
