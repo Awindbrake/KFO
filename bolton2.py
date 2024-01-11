@@ -4,7 +4,7 @@ import base64
 import requests
 import pandas as pd
 import io
-from io import StringIO
+from io import StringIO 
 
 TOKEN = st.secrets["TOKEN"]
 # LaTeX-Code für die Tonnsche Relation
