@@ -519,7 +519,7 @@ col1, col2 = st.columns(2)
 
 col1.image('OK.png')
 col2.write("**Auswertung OK**")
-col3, col4, col5, col6, col7 = st.columns(7)
+
 
 # Display inputs and calculations
 for group_name, teeth in teeth_groups.items():
