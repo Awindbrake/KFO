@@ -17,7 +17,7 @@ pont_latex=r"""
 pont_latex_post=r"""
 \text{PI(post)} = \frac{\text{SIOK}}{\text{65}} \times 100
 """
-TOKEN = "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"
+
 csv_url = 'https://raw.githubusercontent.com/Awindbrake/KFO/main/data.csv'
 
 # Translating the given Moyers probability table into a Python dictionary
