@@ -524,7 +524,7 @@ col2.write("**Auswertung OK**")
 group_columns = st.columns(len(teeth_groups))
 
 # Display inputs and calculations
-for group_name, teeth in teeth_groups.items():
+for i, (group_name, teeth) in enumerate(teeth_groups.items()):
     
     # Calculate the sum of the teeth widths for the group
     group_sum = sum(zahnbreiten.get(tooth, 0) for tooth in teeth)
