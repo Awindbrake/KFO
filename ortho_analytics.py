@@ -263,8 +263,11 @@ def load_data_from_github(url):
 st.title("Modellanalyse - Auswertung von KFO Modellen")
 st.subheader("Dateneingabe")
 
-st.write('Sollen frühere Analysen geladen werden oder Anlage Neupatient?')
-mode = st.radio("Auswahl", ("neue Analyse", "lade existierende Analyse"), index=0)
+#st.write('Sollen frühere Analysen geladen werden oder Anlage Neupatient?')
+#mode = st.radio("Auswahl", ("neue Analyse", "lade existierende Analyse"), index=0)
+mode = st.selectbox(
+    'Sollen frühere Analysen geladen werden oder wird ein Neupatient angelegt?',
+    ('neue Analyse', 'lade existierende Analyse'))
 
 if mode == "lade existierende Analyse":
     
