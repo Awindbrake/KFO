@@ -522,7 +522,7 @@ col2.write("**Auswertung Oberkiefer**")
 
 # Creating columns for each group
 group_columns = st.columns(len(teeth_groups))
-
+space_offered_values = {}
 # Display inputs and calculations
 for i, (group_name, teeth) in enumerate(teeth_groups.items()):
     
@@ -531,7 +531,7 @@ for i, (group_name, teeth) in enumerate(teeth_groups.items()):
 
     # User inputs for space offer
     space_offer = group_columns[i].number_input(f"**Platzangebot {group_name}**", min_value=0.0, format="%.2f", key=f"{group_name}_ang")
-    space_offered_[group_name] = space_offer
+    space_offered_values[group_name] = space_offer
     # Display the metric for space requirement
     group_columns[i].metric(label=f"**{group_name} Bedarf**", value=group_sum, delta=space_offer - group_sum)
 
