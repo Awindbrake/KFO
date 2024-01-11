@@ -518,7 +518,7 @@ st.write("")
 col1, col2 = st.columns(2)
 
 col1.image('OK.png')
-col2.write("**Auswertung OK**")
+col2.write("**Auswertung Oberkiefer**")
 
 # Creating columns for each group
 group_columns = st.columns(len(teeth_groups))
@@ -530,13 +530,11 @@ for i, (group_name, teeth) in enumerate(teeth_groups.items()):
     group_sum = sum(zahnbreiten.get(tooth, 0) for tooth in teeth)
 
     # User inputs for space offer
-    #space_offer = col1.number_input(f"**Platzangebot {group_name}**", min_value=0.0, format="%.2f", key=f"{group_name}_ang")
     space_offer = group_columns[i].number_input(f"**Platzangebot {group_name}**", min_value=0.0, format="%.2f", key=f"{group_name}_ang")
-
-
+    space_offered_[group_name] = space_offer
     # Display the metric for space requirement
-    #col2.metric(label=f"**{group_name} Bedarf**", value=group_sum, delta=space_offer - group_sum)
     group_columns[i].metric(label=f"**{group_name} Bedarf**", value=group_sum, delta=space_offer - group_sum)
+
 # col1.image('UK.png')
 # col2.write("**Auswertung UK**")
 
@@ -550,7 +548,8 @@ for i, (group_name, teeth) in enumerate(teeth_groups.items()):
 
 st.write("---")
 if st.button("save to file"):
-
+    
+        
     data = {
     'pat_id':[pat_id],
     'upper_anterior_sum': [upper_anterior_sum],
@@ -578,6 +577,11 @@ if st.button("save to file"):
     'messung_post_ok': [gemessen_post_ok],
     'messung_post_uk': [gemessen_post_uk]
 }   
+
+    # Add space offered values to data
+    for group_name, value in space_offered_values.items():
+        data[f'space_offered_{group_name}'] = [value]
+    
     df_values = pd.DataFrame(data)
     df_oberkiefer_links_sv = df_oberkiefer_links.reset_index(drop=True)
     df_oberkiefer_rechts_sv = df_oberkiefer_rechts.reset_index(drop=True)
