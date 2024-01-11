@@ -6,7 +6,7 @@ import pandas as pd
 import io
 from io import StringIO
 
-
+TOKEN = st.secrets["TOKEN"]
 # LaTeX-Code für die Tonnsche Relation
 tonns_ratio_latex = r"""
 \text{Tonn Index} = \frac{\text{Summe der unteren Inzisivenbreiten (SIUK)}}{\text{Summe der oberen Inzisivenbreiten (SIOK)}} \times 100
