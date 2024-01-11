@@ -520,20 +520,23 @@ col1, col2 = st.columns(2)
 col1.image('OK.png')
 col2.write("**Auswertung OK**")
 
+# Creating columns for each group
+group_columns = st.columns(len(teeth_groups))
 
 # Display inputs and calculations
 for group_name, teeth in teeth_groups.items():
-    col1, col2 = st.columns(2)
-
+    
     # Calculate the sum of the teeth widths for the group
     group_sum = sum(zahnbreiten.get(tooth, 0) for tooth in teeth)
 
     # User inputs for space offer
-    space_offer = col1.number_input(f"**Platzangebot {group_name}**", min_value=0.0, format="%.2f", key=f"{group_name}_ang")
+    #space_offer = col1.number_input(f"**Platzangebot {group_name}**", min_value=0.0, format="%.2f", key=f"{group_name}_ang")
+    space_offer = group_columns[i].number_input(f"**Platzangebot {group_name}**", min_value=0.0, format="%.2f", key=f"{group_name}_ang")
+
 
     # Display the metric for space requirement
-    col2.metric(label=f"**{group_name} Bedarf**", value=group_sum, delta=space_offer - group_sum)
-
+    #col2.metric(label=f"**{group_name} Bedarf**", value=group_sum, delta=space_offer - group_sum)
+    group_columns[i].metric(label=f"**{group_name} Bedarf**", value=group_sum, delta=space_offer - group_sum)
 # col1.image('UK.png')
 # col2.write("**Auswertung UK**")
 
