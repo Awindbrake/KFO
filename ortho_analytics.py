@@ -8,6 +8,7 @@ from io import StringIO
 
 TOKEN = st.secrets["TOKEN"]
 # LaTeX-Code für die Tonnsche Relation
+# LaTeX-Code für die Tonnsche Relation
 tonns_ratio_latex = r"""
 \text{Tonn Index} = \frac{\text{Summe der unteren Inzisivenbreiten (SIUK)}}{\text{Summe der oberen Inzisivenbreiten (SIOK)}} \times 100
 """
@@ -275,10 +276,11 @@ if mode == "lade existierende Analyse":
     data_df = load_data_from_github(csv_url)
 
     # List of columns to drop (by index)
-    columns_to_drop = list(range(1, 21))  # This will drop columns with indices from 1 to 20
+    #columns_to_drop = list(range(1, 21))  # This will drop columns with indices from 1 to 20
 
     # Drop the columns
-    data_df = data_df.drop(data_df.columns[columns_to_drop], axis=1)
+    #data_df = data_df.drop(data_df.columns[columns_to_drop], axis=1)
+    #st.dataframe(data_df)
 
     # Get unique values from the 'pat_id' column
     pat_ids = data_df['pat_id'].unique()
@@ -286,7 +288,7 @@ if mode == "lade existierende Analyse":
     # Create a select box for user to choose a pat_id
     pat_id = st.selectbox('Select Patient ID', pat_ids)
     selected_row = data_df[data_df['pat_id'] == pat_id].iloc[0] if not data_df[data_df['pat_id'] == pat_id].empty else None
-    
+    #st.dataframe(selected_row)
 else:
     # Logic for entering new patient data
     selected_row = None
@@ -324,7 +326,14 @@ with st.expander("Eingabefelder zeigen"):
                 default_value = selected_row[teeth[i]] if selected_row is not None else 0.0
                 zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, value=default_value, format="%.2f")
 
-
+    default_platz_ok_re = selected_row['platzangebot_ok_rechts'] if selected_row is not None else 0.0
+    default_platz_uk_re = selected_row['platzangebot_uk_rechts'] if selected_row is not None else 0.0
+    default_platz_ok_li = selected_row['platzangebot_ok_links'] if selected_row is not None else 0.0
+    default_platz_uk_li = selected_row['platzangebot_uk_links'] if selected_row is not None else 0.0
+    default_ant_ok = selected_row['messung_ant_ok'] if selected_row is not None else 0.0
+    default_ant_uk = selected_row['messung_ant_uk'] if selected_row is not None else 0.0
+    default_post_ok = selected_row['messung_post_ok'] if selected_row is not None else 0.0
+    default_post_uk = selected_row['messung_post_uk'] if selected_row is not None else 0.0
 # ------- Auswertungen -------------------------------
 
 upper_anterior_sum, lower_anterior_sum_orig = Frontzahnbreiten(zahnbreiten, 2)
@@ -347,13 +356,13 @@ col1, col2 = st.columns(2)
 try:
     
     required_space_upper_jaw = moyers_table_upper_jaw_complete[lower_anterior_sum][75]
-    platzangebot_ok_rechts = col1.number_input(f"Platzangebot OK rechts", min_value=0.0, format="%.2f")
-    platzangebot_ok_links = col2.number_input(f"Platzangebot OK links", min_value=0.0, format="%.2f")
+    platzangebot_ok_rechts = col1.number_input(f"Platzangebot OK rechts", min_value=0.0, value=default_platz_ok_re, format="%.2f")
+    platzangebot_ok_links = col2.number_input(f"Platzangebot OK links", min_value=0.0, value=default_platz_ok_li, format="%.2f")
     st.write(f'Platzbedarf OK: **{required_space_upper_jaw} mm.**')
     
     required_space_lower_jaw = moyers_table_lower_jaw_complete[lower_anterior_sum][75]
-    platzangebot_uk_rechts = col1.number_input(f"Platzangebot UK rechts", min_value=0.0, format="%.2f")
-    platzangebot_uk_links = col2.number_input(f"Platzangebot UK links", min_value=0.0, format="%.2f")
+    platzangebot_uk_rechts = col1.number_input(f"Platzangebot UK rechts", min_value=0.0, value = default_platz_uk_re, format="%.2f")
+    platzangebot_uk_links = col2.number_input(f"Platzangebot UK links", min_value=0.0, value = default_platz_uk_li, format="%.2f")
     st.write(f'Platzbedarf UK: **{required_space_lower_jaw} mm.**')
     diff_OK_rechts = round((platzangebot_ok_rechts - required_space_upper_jaw),1)
     diff_OK_links = round((platzangebot_ok_links - required_space_upper_jaw),1)
@@ -467,9 +476,9 @@ col1.write("   ")
 col1.subheader("**Anterior:**")
 col1.write("")
 col1.write("**Schmuth Index:**")
-gemessen_ant_ok = col2.number_input(f"**Messwerte OK**", min_value=0.0, format="%.2f",key = "OK_ant")
+gemessen_ant_ok = col2.number_input(f"**Messwerte OK**", min_value=0.0, value = default_ant_ok, format="%.2f",key = "OK_ant")
 col2.metric(label="**Sollwerte OK** ", value=siok+8, delta=siok+8-gemessen_ant_ok)
-gemessen_ant_uk = col3.number_input(f"**Messwerte UK**", min_value=0.0, format="%.2f", key = "UK_ant")
+gemessen_ant_uk = col3.number_input(f"**Messwerte UK**", min_value=0.0, value = default_ant_uk, format="%.2f", key = "UK_ant")
 col3.metric(label="**Sollwerte UK**", value=siok+8, delta=siok+8-gemessen_ant_uk)
 col1.write("")
 col1.write("")
@@ -488,9 +497,9 @@ col4.write("  ")
 col4.subheader("**Posterior:**")
 col4.write("")
 col4.write("**Schmuth Index:**")
-gemessen_post_ok = col5.number_input(f"**Messwerte OK**", min_value=0.0, format="%.2f", key = "OK_post")
+gemessen_post_ok = col5.number_input(f"**Messwerte OK**", min_value=0.0, value=default_post_ok, format="%.2f", key = "OK_post")
 col5.metric(label="**Sollwerte OK**", value=siok+16, delta=siok+16-gemessen_post_ok)
-gemessen_post_uk = col6.number_input(f"**Messwerte UK**", min_value=0.0, format="%.2f", key = "UK_post")
+gemessen_post_uk = col6.number_input(f"**Messwerte UK**", min_value=0.0, value=default_post_uk, format="%.2f", key = "UK_post")
 col6.metric(label="**Sollwerte UK**", value=siok+16, delta=siok+16-gemessen_post_uk)
 col4.write("")
 col4.write("")
@@ -501,7 +510,7 @@ col5.write("")
 col5.metric(label="", value=round(siok*100/65,1), delta=None)
 
 
-#--Auswertung Lundström---------
+#--Auswertung Lundström OK ---------
 
 # Define the teeth groups
 teeth_groups = {
@@ -531,15 +540,49 @@ for i, (group_name, teeth) in enumerate(teeth_groups.items()):
     
     # Calculate the sum of the teeth widths for the group
     group_sum = sum(zahnbreiten.get(tooth, 0) for tooth in teeth)
-
+    default_value_OK = selected_row[f'space_offered_{group_name}'] if selected_row is not None else 0.0
     # User inputs for space offer
-    space_offer = group_columns[i].number_input(f"**Platzangebot {group_name}**", min_value=0.0, format="%.2f", key=f"{group_name}_ang")
+    space_offer = group_columns[i].number_input(f"**Platzangebot {group_name}**", min_value=0.0, value=default_value_OK, format="%.2f", key=f"{group_name}_ang")
     space_offered_values[group_name] = space_offer
     # Display the metric for space requirement
     group_columns[i].metric(label=f"**{group_name} Bedarf**", value=group_sum, delta=space_offer - group_sum)
 
-# col1.image('UK.png')
-# col2.write("**Auswertung UK**")
+
+
+#--Auswertung Lundström UK ---------
+
+# Define the teeth groups
+teeth_groups = {
+    "S1": ["3.6", "3.5"],
+    "S2": ["3.4", "3.3"],
+    "S3": ["3.2", "3.1"],
+    "S4": ["4.1", "4.2"],
+    "S5": ["4.3", "4.4"],
+    "S6": ["4.5", "4.6"],
+}
+
+
+st.write(" ")
+st.write("")
+col1, col2 = st.columns(2)
+
+col1.image('UK.png')
+col2.write("**Auswertung Unterkiefer**")
+
+# Creating columns for each group
+group_columns = st.columns(len(teeth_groups))
+space_offered_values_UK = {}
+# Display inputs and calculations
+for i, (group_name, teeth) in enumerate(teeth_groups.items()):
+    
+    # Calculate the sum of the teeth widths for the group
+    group_sum = sum(zahnbreiten.get(tooth, 0) for tooth in teeth)
+    default_value_UK = selected_row[f'space_offered_{group_name}'] if selected_row is not None else 0.0
+    # User inputs for space offer
+    space_offer = group_columns[i].number_input(f"**Platzangebot {group_name}**", min_value=0.0, value = default_value_UK,  format="%.2f", key=f"{group_name}_ang_uk")
+    space_offered_values_UK[group_name] = space_offer
+    # Display the metric for space requirement
+    group_columns[i].metric(label=f"**{group_name} Bedarf**", value=group_sum, delta=space_offer - group_sum)
 
 
 
@@ -584,6 +627,10 @@ if st.button("save to file"):
     # Add space offered values to data
     for group_name, value in space_offered_values.items():
         data[f'space_offered_{group_name}'] = [value]
+
+    # Add space offered values to data for UK
+    for group_name, value in space_offered_values_UK.items():
+        data[f'space_offered_UK{group_name}'] = [value]
     
     df_values = pd.DataFrame(data)
     df_oberkiefer_links_sv = df_oberkiefer_links.reset_index(drop=True)
@@ -604,5 +651,7 @@ if st.button("save to file"):
     csv_file_name = 'data.csv'
     final_df.to_csv(csv_file_name, index=False) 
     update_csv_github(final_df, TOKEN)
+
+
 
 
