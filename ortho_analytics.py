@@ -1,4 +1,4 @@
-import streamlit as st 
+import streamlit as st
 import pandas as pd
 import base64
 import requests
@@ -6,8 +6,8 @@ import pandas as pd
 import io
 from io import StringIO 
 
-TOKEN = st.secrets["TOKEN"]
-# LaTeX-Code für die Tonnsche Relation
+#TOKEN = st.secrets["TOKEN"]
+TOKEN = "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"
 # LaTeX-Code für die Tonnsche Relation
 tonns_ratio_latex = r"""
 \text{Tonn Index} = \frac{\text{Summe der unteren Inzisivenbreiten (SIUK)}}{\text{Summe der oberen Inzisivenbreiten (SIOK)}} \times 100
@@ -319,8 +319,6 @@ with st.expander("Eingabefelder zeigen"):
             with cols[i]:
                 default_value = selected_row[teeth[i]] if selected_row is not None else None
                 zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, value=default_value, format="%.2f")
-                #zahnbreiten[teeth[i]] = float(st.text_input(f"{teeth[i]}:", 0))
-        # Nächste vier Zähne in der zweiten Reihe
         # Nächste vier Zähne in der zweiten Reihe
         cols = st.columns(4)
         for i in range(4, 6):
@@ -479,9 +477,9 @@ col1.subheader("**Anterior:**")
 col1.write("")
 col1.write("**Schmuth Index:**")
 gemessen_ant_ok = col2.number_input(f"**Messwerte OK**", min_value=0.0, value = default_ant_ok, format="%.2f",key = "OK_ant")
-col2.metric(label="**Sollwerte OK** ", value=siok+8, delta=siok+8-gemessen_ant_ok)
+col2.metric(label="**Sollwerte OK** ", value=siok+8, delta=-(siok+8-gemessen_ant_ok))
 gemessen_ant_uk = col3.number_input(f"**Messwerte UK**", min_value=0.0, value = default_ant_uk, format="%.2f", key = "UK_ant")
-col3.metric(label="**Sollwerte UK**", value=siok+8, delta=siok+8-gemessen_ant_uk)
+col3.metric(label="**Sollwerte UK**", value=siok+8, delta=-(siok+8-gemessen_ant_uk))
 col1.write("")
 col1.write("")
 col1.write("")
@@ -500,9 +498,9 @@ col4.subheader("**Posterior:**")
 col4.write("")
 col4.write("**Schmuth Index:**")
 gemessen_post_ok = col5.number_input(f"**Messwerte OK**", min_value=0.0, value=default_post_ok, format="%.2f", key = "OK_post")
-col5.metric(label="**Sollwerte OK**", value=siok+16, delta=siok+16-gemessen_post_ok)
+col5.metric(label="**Sollwerte OK**", value=siok+16, delta=-(siok+16-gemessen_post_ok))
 gemessen_post_uk = col6.number_input(f"**Messwerte UK**", min_value=0.0, value=default_post_uk, format="%.2f", key = "UK_post")
-col6.metric(label="**Sollwerte UK**", value=siok+16, delta=siok+16-gemessen_post_uk)
+col6.metric(label="**Sollwerte UK**", value=siok+16, delta=-(siok+16-gemessen_post_uk))
 col4.write("")
 col4.write("")
 col4.write("")
@@ -653,7 +651,5 @@ if st.button("save to file"):
     csv_file_name = 'data.csv'
     final_df.to_csv(csv_file_name, index=False) 
     update_csv_github(final_df, TOKEN)
-
-
 
 
