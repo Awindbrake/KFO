@@ -319,7 +319,7 @@ with st.expander("Eingabefelder zeigen"):
             with cols[i]:
                 default_value = selected_row[teeth[i]] if selected_row is not None else 0.0
                 #zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, value=default_value, format="%.2f")
-                zahnbreiten[teeth[i]] = int(st.text_input(f"{teeth[i]}:", 0))
+                zahnbreiten[teeth[i]] = float(st.text_input(f"{teeth[i]}:", 0))
         # Nächste vier Zähne in der zweiten Reihe
         # Nächste vier Zähne in der zweiten Reihe
         cols = st.columns(4)
