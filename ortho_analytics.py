@@ -6,8 +6,8 @@ import pandas as pd
 import io
 from io import StringIO 
 
-#TOKEN = st.secrets["TOKEN"]
-TOKEN = "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"
+TOKEN = st.secrets["TOKEN"]
+
 # LaTeX-Code für die Tonnsche Relation
 tonns_ratio_latex = r"""
 \text{Tonn Index} = \frac{\text{Summe der unteren Inzisivenbreiten (SIUK)}}{\text{Summe der oberen Inzisivenbreiten (SIOK)}} \times 100
@@ -317,14 +317,38 @@ with st.expander("Eingabefelder zeigen"):
         cols = st.columns(4)
         for i in range(4):
             with cols[i]:
-                default_value = selected_row[teeth[i]] if selected_row is not None else None
-                zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, value=default_value, format="%.2f")
+                #Check if there's a value for the current tooth, if not, use an empty string
+                default_value = str(selected_row[teeth[i]]) if selected_row is not None and selected_row[teeth[i]] is not None else ""
+                input_str = st.text_input(f"{teeth[i]}:", value=default_value, placeholder="Enter value")
+
+                # Convert the input to a float, use None if the input is empty
+                try:
+                    zahnbreiten[teeth[i]] = float(input_str) if input_str else 0
+                except ValueError:
+                    st.error("Please enter a valid number")
+                    zahnbreiten[teeth[i]] = None
+                    
+                
+                #default_value = selected_row[teeth[i]] if selected_row is not None else 0
+                #zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0, value=default_value, format="%.2f")
         # Nächste vier Zähne in der zweiten Reihe
         cols = st.columns(4)
         for i in range(4, 6):
             with cols[i - 4]:
-                default_value = selected_row[teeth[i]] if selected_row is not None else None
-                zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, value=default_value, format="%.2f")
+                #Check if there's a value for the current tooth, if not, use an empty string
+                default_value = str(selected_row[teeth[i]]) if selected_row is not None and selected_row[teeth[i]] is not None else ""
+                input_str = st.text_input(f"{teeth[i]}:", value=default_value, placeholder="Enter value")
+
+                # Convert the input to a float, use None if the input is empty
+                try:
+                    zahnbreiten[teeth[i]] = float(input_str) if input_str else 0
+                except ValueError:
+                    st.error("Please enter a valid number")
+                    zahnbreiten[teeth[i]] = None
+                
+                
+                # default_value = selected_row[teeth[i]] if selected_row is not None else 0
+                # zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0, value=default_value, format="%.2f")
 
     default_platz_ok_re = selected_row['platzangebot_ok_rechts'] if selected_row is not None else 0.0
     default_platz_uk_re = selected_row['platzangebot_uk_rechts'] if selected_row is not None else 0.0
@@ -356,13 +380,18 @@ col1, col2 = st.columns(2)
 try:
     
     required_space_upper_jaw = moyers_table_upper_jaw_complete[lower_anterior_sum][75]
-    platzangebot_ok_rechts = col1.number_input(f"Platzangebot OK rechts", min_value=0.0, value=default_platz_ok_re, format="%.2f")
-    platzangebot_ok_links = col2.number_input(f"Platzangebot OK links", min_value=0.0, value=default_platz_ok_li, format="%.2f")
+    angebot_ok_rechts = col1.text_input("Platzangebot OK rechts", value = "", placeholder="Enter value")
+    platzangebot_ok_rechts = float(angebot_ok_rechts) if angebot_ok_rechts else 0
+    angebot_ok_links = col2.text_input("Platzangebot OK links", value = "", placeholder="Enter value")
+    platzangebot_ok_links = float(angebot_ok_links) if angebot_ok_links else 0
     st.write(f'Platzbedarf OK: **{required_space_upper_jaw} mm.**')
     
     required_space_lower_jaw = moyers_table_lower_jaw_complete[lower_anterior_sum][75]
-    platzangebot_uk_rechts = col1.number_input(f"Platzangebot UK rechts", min_value=0.0, value = default_platz_uk_re, format="%.2f")
-    platzangebot_uk_links = col2.number_input(f"Platzangebot UK links", min_value=0.0, value = default_platz_uk_li, format="%.2f")
+    angebot_uk_rechts = col1.text_input("Platzangebot UK rechts", value = "", placeholder="Enter value")
+    platzangebot_uk_rechts = float(angebot_uk_rechts) if angebot_uk_rechts else 0
+    angebot_uk_links = col2.text_input("Platzangebot UK links", value = "", placeholder="Enter value")
+    platzangebot_uk_links = float(angebot_uk_links) if angebot_uk_links else 0
+    
     st.write(f'Platzbedarf UK: **{required_space_lower_jaw} mm.**')
     diff_OK_rechts = round((platzangebot_ok_rechts - required_space_upper_jaw),1)
     diff_OK_links = round((platzangebot_ok_links - required_space_upper_jaw),1)
@@ -441,14 +470,7 @@ st.write(" ")
 col1, col2 = st.columns(2)
 col1.write(f'Overall Ratio:   ')
 col2.write(f"**{ttsr}** % ({text_ttsr})")
-# st.write('--- NOCH ZU TESTEN ---')
-# st.markdown(f''':red[**{text_korrektur}**]''')
-# st.write("---")
-# col1.write(f'Summe 6-6 OK:')
-# col2.write(f'**{upper_sum_6_6}** mm.')
-# col1.write(f'Summe 6-6 UK:')
-# col2.write(f'**{lower_sum_6_6}** mm.')
-# #col2.write(f'ratio = {ratio} %')
+
 
 col1.write()
 
@@ -476,9 +498,14 @@ col1.write("   ")
 col1.subheader("**Anterior:**")
 col1.write("")
 col1.write("**Schmuth Index:**")
-gemessen_ant_ok = col2.number_input(f"**Messwerte OK**", min_value=0.0, value = default_ant_ok, format="%.2f",key = "OK_ant")
+
+
+
+mess_ant_ok = col2.text_input("**Messwerte OK**", value = "", placeholder="Enter value", key = "ant_ok")
+gemessen_ant_ok = float(mess_ant_ok) if mess_ant_ok else 0
 col2.metric(label="**Sollwerte OK** ", value=siok+8, delta=-(siok+8-gemessen_ant_ok))
-gemessen_ant_uk = col3.number_input(f"**Messwerte UK**", min_value=0.0, value = default_ant_uk, format="%.2f", key = "UK_ant")
+mess_ant_uk = col3.text_input("**Messwerte UK**", value = "", placeholder="Enter value", key = "ant_uk")
+gemessen_ant_uk = float(mess_ant_uk) if mess_ant_uk else 0
 col3.metric(label="**Sollwerte UK**", value=siok+8, delta=-(siok+8-gemessen_ant_uk))
 col1.write("")
 col1.write("")
@@ -497,9 +524,11 @@ col4.write("  ")
 col4.subheader("**Posterior:**")
 col4.write("")
 col4.write("**Schmuth Index:**")
-gemessen_post_ok = col5.number_input(f"**Messwerte OK**", min_value=0.0, value=default_post_ok, format="%.2f", key = "OK_post")
+mess_post_ok = col5.text_input("**Messwerte OK**", value = "", placeholder="Enter value", key="post_ok")
+gemessen_post_ok = float(mess_post_ok) if mess_post_ok else 0
 col5.metric(label="**Sollwerte OK**", value=siok+16, delta=-(siok+16-gemessen_post_ok))
-gemessen_post_uk = col6.number_input(f"**Messwerte UK**", min_value=0.0, value=default_post_uk, format="%.2f", key = "UK_post")
+mess_post_uk = col6.text_input("**Messwerte UK**", value = "", placeholder="Enter value", key="post_uk")
+gemessen_post_uk = float(mess_post_uk) if mess_post_uk else 0
 col6.metric(label="**Sollwerte UK**", value=siok+16, delta=-(siok+16-gemessen_post_uk))
 col4.write("")
 col4.write("")
@@ -542,10 +571,12 @@ for i, (group_name, teeth) in enumerate(teeth_groups.items()):
     group_sum = sum(zahnbreiten.get(tooth, 0) for tooth in teeth)
     default_value_OK = selected_row[f'space_offered_{group_name}'] if selected_row is not None else 0.0
     # User inputs for space offer
-    space_offer = group_columns[i].number_input(f"**Platzangebot {group_name}**", min_value=0.0, value=default_value_OK, format="%.2f", key=f"{group_name}_ang")
-    space_offered_values[group_name] = space_offer
+    space_offer = group_columns[i].text_input(f"**Platzangebot {group_name}**",value = "", placeholder="val", key=f"{group_name}_ang")
+    space_offer_float = float(space_offer) if space_offer else 0
+    
+    space_offered_values[group_name] = space_offer_float
     # Display the metric for space requirement
-    group_columns[i].metric(label=f"**{group_name} Bedarf**", value=group_sum, delta=space_offer - group_sum)
+    group_columns[i].metric(label=f"**{group_name} Bedarf**", value=group_sum, delta=space_offer_float - group_sum)
 
 
 
@@ -578,12 +609,14 @@ for i, (group_name, teeth) in enumerate(teeth_groups.items()):
     # Calculate the sum of the teeth widths for the group
     group_sum = sum(zahnbreiten.get(tooth, 0) for tooth in teeth)
     default_value_UK = selected_row[f'space_offered_{group_name}'] if selected_row is not None else 0.0
+    
     # User inputs for space offer
-    space_offer = group_columns[i].number_input(f"**Platzangebot {group_name}**", min_value=0.0, value = default_value_UK,  format="%.2f", key=f"{group_name}_ang_uk")
-    space_offered_values_UK[group_name] = space_offer
+    space_offer = group_columns[i].text_input(f"**Platzangebot {group_name}**",value = "", placeholder="val", key=f"{group_name}_ang_uk")
+    space_offer_float = float(space_offer) if space_offer else 0
+    
+    space_offered_values[group_name] = space_offer_float
     # Display the metric for space requirement
-    group_columns[i].metric(label=f"**{group_name} Bedarf**", value=group_sum, delta=space_offer - group_sum)
-
+    group_columns[i].metric(label=f"**{group_name} Bedarf**", value=group_sum, delta=space_offer_float - group_sum)
 
 
 
