@@ -326,7 +326,7 @@ with st.expander("Eingabefelder zeigen"):
         for i in range(4, 6):
             with cols[i - 4]:
                 default_value = selected_row[teeth[i]] if selected_row is not None else 0.0
-                zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0, value=default_value, format="%.2f")
+                zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, value=default_value, format="%.2f")
 
     default_platz_ok_re = selected_row['platzangebot_ok_rechts'] if selected_row is not None else 0.0
     default_platz_uk_re = selected_row['platzangebot_uk_rechts'] if selected_row is not None else 0.0
