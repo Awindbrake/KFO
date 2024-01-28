@@ -317,7 +317,7 @@ with st.expander("Eingabefelder zeigen"):
         cols = st.columns(4)
         for i in range(4):
             with cols[i]:
-                default_value = selected_row[teeth[i]] if selected_row is not None else 0.0
+                default_value = selected_row[teeth[i]] if selected_row is not None else None
                 zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, value=default_value, format="%.2f")
                 #zahnbreiten[teeth[i]] = float(st.text_input(f"{teeth[i]}:", 0))
         # Nächste vier Zähne in der zweiten Reihe
@@ -325,7 +325,7 @@ with st.expander("Eingabefelder zeigen"):
         cols = st.columns(4)
         for i in range(4, 6):
             with cols[i - 4]:
-                default_value = selected_row[teeth[i]] if selected_row is not None else 0.0
+                default_value = selected_row[teeth[i]] if selected_row is not None else None
                 zahnbreiten[teeth[i]] = st.number_input(f"{teeth[i]}:", min_value=0.0, value=default_value, format="%.2f")
 
     default_platz_ok_re = selected_row['platzangebot_ok_rechts'] if selected_row is not None else 0.0
